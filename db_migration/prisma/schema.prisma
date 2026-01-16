@@ -1,0 +1,127 @@
+/**
+* This is the Prisma schema file
+* It defines the database models and their relationships
+* Schema notes: 
+  - The only mapping form HL to LS or another annotator will be projects and tasks 
+  - This is to minimize coupling between HL and any annotator platform for better flexibility
+  - all the flows like RBAC and task access will be managed in HL side
+  - This is a basic poc schema and can be extended further based on requirements
+    This is designed to be flexible enough to accommodate future flow changes
+*/
+generator client {
+  provider = "prisma-client-js"
+  output = "../generated"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+ 
+}
+
+/**
+* This is the user mapping table for platform users to Human labs users
+* This is to support custom authentication systems per user basis from HL side 
+* NOTE : this will not create a dedicated user in Label studio, this is just a mapping table
+* also the platform_user_id will be the id used through out other tables to refer to the user
+* platform_user_id refers to the user id in the platform's own user management system
+*/
+model hl_user {
+  id                Int      @id @default(autoincrement())
+  platform_user_id  Int
+  name              String
+  email             String
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+}
+
+/**
+* This is an association table mapping users to projects with specific roles
+* A user can have multiple roles in different projects
+* Roles can be : annotator, reviewer (for now at least)
+* Question: hwo will this be configured ? or the eligibility be configured ?
+*/
+model hl_user_project_role {
+  id                Int @id @default(autoincrement())
+  platform_user_id  Int
+  project_id        Int
+  role              String
+  created_at        DateTime @default(now()) 
+  updated_at        DateTime @updatedAt
+}
+
+/**
+* This is the main project table
+* Each project will have multiple stages defined in the project_pipeline_stage table 
+    (not part of poc but adding for future references)
+* Each stage will have tasks defined in the hl_task table
+* This will also have a reference to the annotator project id in annotator platform (label studio)
+* The stage_order will define the order of stages in the project pipeline 
+    NOTE: the order will be exactly as defined in the string with comma separation
+* current_stage will define the current stage of the project
+*/
+model hl_project {
+  id                    Int @id @default(autoincrement())
+  name                  String
+  desc                  String
+  annotator_project_id  Int
+  stage_order           String // "collection , annotation, review"
+  current_stage         String
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+}
+
+/**
+* This table defines the stages in a project pipeline
+* Each stage will have its own custom config as per the type (collection, annotation, review/qcs)
+* Improvements: ideally this should be a nosql thing as the config can be complex and dynamic
+* but for poc purposes keeping it simple
+* this will have reference to the project id in hl_project table
+  NOTE:this is the project_id in human labs not the LABEL STUDIO project id
+*/
+model project_pipeline_stage {
+  id            Int      @id @default(autoincrement())
+  project_id    Int 
+  name          String
+  desc          String
+  type          String // [collection, annotation, review/qc]
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}
+
+/**
+* This is an association table mapping users to tasks
+* so this will have reference to platform_user_id and task_id
+* assigned_at will have the timestamp when the task was assigned
+* task_expiry will have the timestamp when the task is expected to be completed
+* completed_at will have the timestamp when the task was actually completed
+  FLOW: might run a cron job or schedular to check for expired tasks and notify users or make the task open again
+*/
+model hl_user_task {
+  id                Int      @id @default(autoincrement())
+  platform_user_id  Int
+  task_id           Int
+  assigned_at       DateTime @default(now())
+  task_expiry       DateTime? 
+  completed_at      DateTime?
+}
+
+/**
+* This is the main task table
+* Each task will have reference to the project it belongs to
+* and also the annotator_task_id in the annotator platform (label studio)
+* type will define the type of task (collection, annotation, review/qc)
+* status will define the current status of the task (assigned, open, completed)
+*/
+model hl_task {
+  id                    Int      @id @default(autoincrement())
+  project_id            Int
+  annotator_task_id     Int
+  name                  String
+  desc                  String
+  type                  String // collection, annotation, review/qc 
+  status                String // assigned, open, completed
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+}
+

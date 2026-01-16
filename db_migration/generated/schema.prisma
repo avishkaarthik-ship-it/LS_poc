@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider   = "prisma-client-js"
+  output     = "../generated"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model hl_user {
+  id               Int      @id @default(autoincrement())
+  platform_user_id Int
+  name             String
+  email            String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model hl_user_project_role {
+  id               Int      @id @default(autoincrement())
+  platform_user_id Int
+  project_id       Int
+  role             String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model hl_project {
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  desc                 String
+  annotator_project_id Int
+  stage_order          String // "collection , annotation, review"
+  current_stage        String
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+}
+
+model project_pipeline_stage {
+  id         Int      @id @default(autoincrement())
+  project_id Int
+  name       String
+  desc       String
+  type       String // [collection, annotation, review/qc]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model hl_user_task {
+  id               Int       @id @default(autoincrement())
+  platform_user_id Int
+  task_id          Int
+  assigned_at      DateTime  @default(now())
+  task_expiry      DateTime?
+  completed_at     DateTime?
+}
+
+model hl_task {
+  id                Int      @id @default(autoincrement())
+  project_id        Int
+  annotator_task_id Int
+  name              String
+  desc              String
+  type              String // collection, annotation, review/qc 
+  status            String // assigned, open, completed
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+}
