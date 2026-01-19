@@ -123,6 +123,12 @@ npx prisma validate
 
 Run your custom scripts (in the `scripts/` folder):
 
+NOTE: just run the this script with the following args to init enough data for POC 
+    project Id can you can get from LS just check the network tab
+```bash
+node scripts/init.js {LABEL_STUDIO_LEGACY_TOKEN} {LS_PROJECT_ID} 
+```
+
 ```bash
 node scripts/createUsers.js
 node scripts/createUserRole.js

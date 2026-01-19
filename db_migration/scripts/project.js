@@ -13,15 +13,16 @@ const prisma = new PrismaClient({
 async function CreateProject() {
     try {
 
-        await prisma.hl_project.create({
+        const p = await prisma.hl_project.create({
             data: {
                 name: "image_classifier",
                 desc: "simple image box classification project",
-                annotator_project_id: 1,
+                annotator_project_id: 7,
                 stage_order: "collect,annotate,review,complete",
                 current_stage: "collect"
             } 
         });
+        console.log("Created project: ", p.id);
     } catch(error) {
         console.log("Error creating project: ", error);
     }
