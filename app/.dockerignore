@@ -1,0 +1,46 @@
+# Docker ignore file for Human Labs POC
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+*_test.go
+test/
+tests/
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+human-labs-app
+
+# Development files
+.env
+.env.local
+*.log
+
+# Azure files (if any)
+.azure/
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore

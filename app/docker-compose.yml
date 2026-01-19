@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Database connection
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=hl_admin
+      - DB_PASSWORD=hl_password
+      - DB_NAME=human_labs
+
+      # Label Studio
+      - LABEL_STUDIO_URL=http://label-studio:8080
+      - LABEL_STUDIO_TOKEN=d7b9acb94f5def3aa4a2c234936f9f4e1752f4f2
+    depends_on:
+      - postgres
+      - label-studio
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=hl_admin
+      - POSTGRES_PASSWORD=hl_password
+      - POSTGRES_DB=human_labs
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_hl_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  label-studio:
+    image: heartexlabs/label-studio:latest
+    environment:
+      - LABEL_STUDIO_ENABLE_LEGACY_API_TOKEN=true
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_hl_data:
+
