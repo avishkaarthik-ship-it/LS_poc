@@ -195,13 +195,37 @@ func (db *psqlDbHelperIns) AddReviewResultToTask(ctx context.Context, taskId int
 	return nil
 }
 
+func (db *psqlDbHelperIns) UpdateAnnotationIdOfUserTaskAssignment(
+	ctx context.Context,
+	annotationId int, taskId int, platformUserId int,
+) *apperror.AppError {
+	_, err := db.PgClient.Exec(ctx,
+		`UPDATE hl_user_task 
+		SET annotation_id=$1, completed_at=NOW()
+		WHERE task_id=$2 AND platform_user_id=$3;`,
+		annotationId, taskId, platformUserId,
+	)
+
+	if err != nil {
+		return &apperror.AppError{
+			Err:        err,
+			Code:       apperror.QUERY_ERROR,
+			HttpStatus: 500,
+			Message:    "Failed to update annotation id of user task assignment",
+		}
+	}
+
+	return nil
+
+}
+
 func (db *psqlDbHelperIns) AddProjectRoleToUser(
 	ctx context.Context,
 	platformUserId int, projectId int, role string,
 ) *apperror.AppError {
 	_, err := db.PgClient.Exec(ctx,
-		`INSERT INTO hl_user_project_role (platform_user_id, project_id, role)
-		VALUES ($1, $2, $3);`,
+		`INSERT INTO hl_user_project_role (platform_user_id, project_id, role, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW());`,
 		platformUserId, projectId, role,
 	)
 

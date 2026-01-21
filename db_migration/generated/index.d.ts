@@ -15,32 +15,66 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
 
 /**
  * Model hl_user
- * 
+ * *
+ * * This is the user mapping table for platform users to Human labs users
+ * * This is to support custom authentication systems per user basis from HL side 
+ * * NOTE : this will not create a dedicated user in Label studio, this is just a mapping table
+ * * also the platform_user_id will be the id used through out other tables to refer to the user
+ * * platform_user_id refers to the user id in the platform's own user management system
  */
 export type hl_user = $Result.DefaultSelection<Prisma.$hl_userPayload>
 /**
  * Model hl_user_project_role
- * 
+ * *
+ * * This is an association table mapping users to projects with specific roles
+ * * A user can have multiple roles in different projects
+ * * Roles can be : annotator, reviewer (for now at least)
+ * * Question: hwo will this be configured ? or the eligibility be configured ?
  */
 export type hl_user_project_role = $Result.DefaultSelection<Prisma.$hl_user_project_rolePayload>
 /**
  * Model hl_project
- * 
+ * *
+ * * This is the main project table
+ * * Each project will have multiple stages defined in the project_pipeline_stage table 
+ *     (not part of poc but adding for future references)
+ * * Each stage will have tasks defined in the hl_task table
+ * * This will also have a reference to the annotator project id in annotator platform (label studio)
+ * * The stage_order will define the order of stages in the project pipeline 
+ *     NOTE: the order will be exactly as defined in the string with comma separation
+ * * current_stage will define the current stage of the project
  */
 export type hl_project = $Result.DefaultSelection<Prisma.$hl_projectPayload>
 /**
  * Model project_pipeline_stage
- * 
+ * *
+ * * This table defines the stages in a project pipeline
+ * * Each stage will have its own custom config as per the type (collection, annotation, review/qcs)
+ * * Improvements: ideally this should be a nosql thing as the config can be complex and dynamic
+ * * but for poc purposes keeping it simple
+ * * this will have reference to the project id in hl_project table
+ *   NOTE:this is the project_id in human labs not the LABEL STUDIO project id
  */
 export type project_pipeline_stage = $Result.DefaultSelection<Prisma.$project_pipeline_stagePayload>
 /**
  * Model hl_user_task
- * 
+ * *
+ * * This is an association table mapping users to tasks
+ * * so this will have reference to platform_user_id and task_id
+ * * assigned_at will have the timestamp when the task was assigned
+ * * task_expiry will have the timestamp when the task is expected to be completed
+ * * completed_at will have the timestamp when the task was actually completed
+ *   FLOW: might run a cron job or schedular to check for expired tasks and notify users or make the task open again
  */
 export type hl_user_task = $Result.DefaultSelection<Prisma.$hl_user_taskPayload>
 /**
  * Model hl_task
- * 
+ * *
+ * * This is the main task table
+ * * Each task will have reference to the project it belongs to
+ * * and also the annotator_task_id in the annotator platform (label studio)
+ * * type will define the type of task (collection, annotation, review/qc)
+ * * status will define the current status of the task (assigned, open, completed)
  */
 export type hl_task = $Result.DefaultSelection<Prisma.$hl_taskPayload>
 
@@ -56,7 +90,7 @@ export type hl_task = $Result.DefaultSelection<Prisma.$hl_taskPayload>
  * ```
  *
  *
- * Read more in our [docs](https://pris.ly/d/client).
+ * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
  */
 export class PrismaClient<
   ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
@@ -77,7 +111,7 @@ export class PrismaClient<
    * ```
    *
    *
-   * Read more in our [docs](https://pris.ly/d/client).
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
    */
 
   constructor(optionsArg ?: Prisma.Subset<ClientOptions, Prisma.PrismaClientOptions>);
@@ -100,7 +134,7 @@ export class PrismaClient<
    * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
    * ```
    *
-   * Read more in our [docs](https://pris.ly/d/raw-queries).
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
 
@@ -112,7 +146,7 @@ export class PrismaClient<
    * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
    * ```
    *
-   * Read more in our [docs](https://pris.ly/d/raw-queries).
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
 
@@ -123,7 +157,7 @@ export class PrismaClient<
    * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
    * ```
    *
-   * Read more in our [docs](https://pris.ly/d/raw-queries).
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
 
@@ -135,7 +169,7 @@ export class PrismaClient<
    * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
    * ```
    *
-   * Read more in our [docs](https://pris.ly/d/raw-queries).
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
 
@@ -156,6 +190,7 @@ export class PrismaClient<
   $transaction<P extends Prisma.PrismaPromise<any>[]>(arg: [...P], options?: { isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<runtime.Types.Utils.UnwrapTuple<P>>
 
   $transaction<R>(fn: (prisma: Omit<PrismaClient, runtime.ITXClientDenyList>) => $Utils.JsPromise<R>, options?: { maxWait?: number, timeout?: number, isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<R>
+
 
   $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb<ClientOptions>, ExtArgs, $Utils.Call<Prisma.TypeMapCb<ClientOptions>, {
     extArgs: ExtArgs
@@ -260,6 +295,14 @@ export namespace Prisma {
   export type DecimalJsLike = runtime.DecimalJsLike
 
   /**
+   * Metrics
+   */
+  export type Metrics = runtime.Metrics
+  export type Metric<T> = runtime.Metric<T>
+  export type MetricHistogram = runtime.MetricHistogram
+  export type MetricHistogramBucket = runtime.MetricHistogramBucket
+
+  /**
   * Extensions
   */
   export import Extension = $Extensions.UserArgs
@@ -270,12 +313,11 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 7.2.0
-   * Query Engine version: 0c8ef2ce45c83248ab3df073180d5eda9e8be7a3
+   * Prisma Client JS version: 6.19.2
+   * Query Engine version: c2990dca591cba766e3b7ef5d9e8a84796e47ab7
    */
   export type PrismaVersion = {
     client: string
-    engine: string
   }
 
   export const prismaVersion: PrismaVersion
@@ -665,6 +707,9 @@ export namespace Prisma {
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
 
 
+  export type Datasources = {
+    db?: Datasource
+  }
 
   interface TypeMapCb<ClientOptions = {}> extends $Utils.Fn<{extArgs: $Extensions.InternalArgs }, $Utils.Record<string, any>> {
     returns: Prisma.TypeMap<this['params']['extArgs'], ClientOptions extends { omit: infer OmitOptions } ? OmitOptions : {}>
@@ -1152,6 +1197,14 @@ export namespace Prisma {
   export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
   export interface PrismaClientOptions {
     /**
+     * Overwrites the datasource url from your schema.prisma file
+     */
+    datasources?: Datasources
+    /**
+     * Overwrites the datasource url from your schema.prisma file
+     */
+    datasourceUrl?: string
+    /**
      * @default "colorless"
      */
     errorFormat?: ErrorFormat
@@ -1177,7 +1230,7 @@ export namespace Prisma {
      *  { emit: 'stdout', level: 'error' }
      * 
      * ```
-     * Read more in our [docs](https://pris.ly/d/logging).
+     * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
      */
     log?: (LogLevel | LogDefinition)[]
     /**
@@ -1193,11 +1246,7 @@ export namespace Prisma {
     /**
      * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-planetscale`
      */
-    adapter?: runtime.SqlDriverAdapterFactory
-    /**
-     * Prisma Accelerate URL allowing the client to connect through Accelerate instead of a direct database.
-     */
-    accelerateUrl?: string
+    adapter?: runtime.SqlDriverAdapterFactory | null
     /**
      * Global configuration for omitting model fields by default.
      * 
@@ -1213,22 +1262,6 @@ export namespace Prisma {
      * ```
      */
     omit?: Prisma.GlobalOmitConfig
-    /**
-     * SQL commenter plugins that add metadata to SQL queries as comments.
-     * Comments follow the sqlcommenter format: https://google.github.io/sqlcommenter/
-     * 
-     * @example
-     * ```
-     * const prisma = new PrismaClient({
-     *   adapter,
-     *   comments: [
-     *     traceContext(),
-     *     queryInsights(),
-     *   ],
-     * })
-     * ```
-     */
-    comments?: runtime.SqlCommenterPlugin[]
   }
   export type GlobalOmitConfig = {
     hl_user?: hl_userOmit

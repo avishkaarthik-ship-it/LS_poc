@@ -1,9 +1,9 @@
 const axios = require("axios");
 const TKN = process.argv[2] || "d7b9acb94f5def3aa4a2c234936f9f4e1752f4f2";
-const PROJECT_ID = process.argv[3] || 1; 
+const PROJECT_ID = parseInt(process.argv[3]) || 1; 
 
 const {PrismaPg} = require("@prisma/adapter-pg");   
-const {PrismaClient} = require("../generated/client");
+const {PrismaClient} = require("@prisma/client");
 require('dotenv').config(); 
 
 const adapter = new PrismaPg({

@@ -43,7 +43,9 @@ func (hls *HumanLabsService) AssignTaskToUser(ctx context.Context, platformUserI
 	if userRoleObj == nil {
 		//assign a project role to user
 		appErr = hls.DbHelper.AddProjectRoleToUser(ctx, platformUserId, projectId, roleFromTskType(taskType))
-
+		if appErr != nil {
+			return nil, appErr
+		}
 	}
 
 	if userRoleObj != nil && !canUserDoTheTaskByRole((*userRoleObj)["role"].(string), taskType) {
@@ -86,31 +88,7 @@ func (hls *HumanLabsService) GetTaskById(
 			Err:        nil,
 			Code:       apperror.INVALID_REQUEST,
 			HttpStatus: http.StatusBadRequest,
-			Message:    "Task is not open for annotation",
-		}
-	}
-
-	projectId := int((*taskInfo)["project_id"].(int32))
-
-	userRoleObj, appErr := hls.DbHelper.GetUserProjectRoles(ctx, platformUserId, projectId)
-	if appErr != nil {
-		return nil, appErr
-	}
-	if userRoleObj == nil {
-		return nil, &apperror.AppError{
-			Err:        nil,
-			Code:       apperror.INVALID_REQUEST,
-			HttpStatus: http.StatusBadRequest,
-			Message:    "User does not have annotator role in the project",
-		}
-	}
-
-	if !canUserDoTheTaskByRole((*userRoleObj)["role"].(string), (*taskInfo)["type"].(string)) {
-		return nil, &apperror.AppError{
-			Err:        nil,
-			Code:       apperror.INVALID_REQUEST,
-			HttpStatus: http.StatusBadRequest,
-			Message:    "User does not have annotator role in the project",
+			Message:    "Task is not open",
 		}
 	}
 
@@ -160,7 +138,7 @@ func (hls *HumanLabsService) AddAnnotationToTask(
 	//Add annotation to Label Studio task and mark annotation task as completed
 	//ideally this should be in a transaction but skipping for now
 	//for simplicity and POC purposes
-	appErr = hls.LSHelper.AddAnnotationToTask(
+	annotationId, appErr := hls.LSHelper.AddAnnotationToTask(
 		ctx,
 		int((*taskInfo)["annotator_task_id"].(int32)),
 		annotation,
@@ -169,6 +147,15 @@ func (hls *HumanLabsService) AddAnnotationToTask(
 		return nil, appErr
 	}
 	appErr = hls.DbHelper.MarkTaskAsCompleted(ctx, taskId)
+	if appErr != nil {
+		return nil, appErr
+	}
+	appErr = hls.DbHelper.UpdateAnnotationIdOfUserTaskAssignment(
+		ctx,
+		annotationId,
+		taskId,
+		platformUserId,
+	)
 	if appErr != nil {
 		return nil, appErr
 	}

@@ -81,7 +81,7 @@ func (ls *LabelStudioIns) AddAnnotationToTask(
 	ctx context.Context,
 	lsTaskId int,
 	annotationPayload *[]map[string]any,
-) *apperror.AppError {
+) (int, *apperror.AppError) {
 
 	// make body for request
 	bodyPayload := map[string]any{
@@ -89,7 +89,7 @@ func (ls *LabelStudioIns) AddAnnotationToTask(
 	}
 	bodyBytes, err := json.Marshal(bodyPayload)
 	if err != nil {
-		return &apperror.AppError{
+		return 0, &apperror.AppError{
 			Err:        err,
 			Code:       apperror.JSON_ENCODE_ERROR,
 			HttpStatus: 500,
@@ -105,7 +105,7 @@ func (ls *LabelStudioIns) AddAnnotationToTask(
 	)
 	// check for errors
 	if err != nil {
-		return &apperror.AppError{
+		return 0, &apperror.AppError{
 			Err:        err,
 			Code:       apperror.LABEL_STUDIO_ERROR,
 			HttpStatus: 500,
@@ -118,17 +118,42 @@ func (ls *LabelStudioIns) AddAnnotationToTask(
 	req.Header.Add("Content-Type", "application/json")
 
 	// do the request
-	_, err = ls.httpClient.Do(req)
+	resp, err := ls.httpClient.Do(req)
 	if err != nil {
-		return &apperror.AppError{
+		return 0, &apperror.AppError{
 			Err:        err,
 			Code:       apperror.LABEL_STUDIO_ERROR,
 			HttpStatus: 500,
 			Message:    "Failed to perform request to add annotation to Label Studio task",
 		}
 	}
+	defer resp.Body.Close()
 
-	return nil
+	// check status code
+	if resp.StatusCode != http.StatusCreated {
+		return 0, &apperror.AppError{
+			Err:        fmt.Errorf("unexpected status code: %d", resp.StatusCode),
+			Code:       apperror.LABEL_STUDIO_ERROR,
+			HttpStatus: resp.StatusCode,
+			Message:    "Failed to add annotation to Label Studio task",
+		}
+	}
+
+	// read body
+	result := struct {
+		Id int `json:"id"`
+	}{}
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return 0, &apperror.AppError{
+			Err:        err,
+			Code:       apperror.JSON_DECODE_ERROR,
+			HttpStatus: 500,
+			Message:    "Failed to decode response from Label Studio",
+		}
+	}
+
+	return result.Id, nil
 }
 
 func (ls *LabelStudioIns) UpdateAnnotation(update *map[string]any, annotationId int) *apperror.AppError {

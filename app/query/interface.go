@@ -14,4 +14,5 @@ type DbHelper interface {
 	AssignTaskToUser(ctx context.Context, platformUserId int, taskId int) *apperror.AppError
 	MarkTaskAsCompleted(ctx context.Context, taskId int) *apperror.AppError
 	AddReviewResultToTask(ctx context.Context, taskId int, reviewResults string) *apperror.AppError
+	UpdateAnnotationIdOfUserTaskAssignment(ctx context.Context, annotationId int, taskId int, platformUserId int) *apperror.AppError
 }

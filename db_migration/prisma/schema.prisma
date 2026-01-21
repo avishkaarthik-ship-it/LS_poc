@@ -10,7 +10,7 @@
 */
 generator client {
   provider = "prisma-client-js"
-  output = "../generated"
+
   engineType = "client"
 }
 
@@ -102,6 +102,7 @@ model hl_user_task {
   id                Int      @id @default(autoincrement())
   platform_user_id  Int
   task_id           Int
+  annotation_id    Int?
   assigned_at       DateTime @default(now())
   task_expiry       DateTime? 
   completed_at      DateTime?
