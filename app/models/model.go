@@ -46,6 +46,7 @@ type HL_TASK_ASSIGNMENT struct {
 	TaskExpiry     time.Time `db:"task_expiry" json:"taskExpiry"`
 	CompletedAt    time.Time `db:"completed_at" json:"completedAt"`
 	Id             int       `db:"id" json:"id"`
+	AnnotationId   int       `db:"annotation_id" json:"annotationId"`
 	PlatformUserId int       `db:"platform_user_id" json:"platformUserId"`
 	TaskId         int       `db:"task_id" json:"taskId"`
 }

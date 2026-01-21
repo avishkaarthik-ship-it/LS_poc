@@ -18,7 +18,7 @@ type LabelStudioIns struct {
 
 func NewLabelStudioClient() *LabelStudioIns {
 	return &LabelStudioIns{
-		accessToke: "Token d7b9acb94f5def3aa4a2c234936f9f4e1752f4f2",
+		accessToke: "Token a5b0476f145242e117c7853b3436faaab7292801",
 		baseUrl:    "http://localhost:8080",
 		httpClient: &http.Client{},
 	}

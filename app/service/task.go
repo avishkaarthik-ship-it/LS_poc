@@ -34,21 +34,19 @@ func (hls *HumanLabsService) AssignTaskToUser(ctx context.Context, platformUserI
 	}
 
 	projectId := int((*taskInfo)["project_id"].(int32))
+	taskType := (*taskInfo)["type"].(string)
 
 	userRoleObj, appErr := hls.DbHelper.GetUserProjectRoles(ctx, platformUserId, projectId)
 	if appErr != nil {
 		return nil, appErr
 	}
 	if userRoleObj == nil {
-		return nil, &apperror.AppError{
-			Err:        nil,
-			Code:       apperror.INVALID_REQUEST,
-			HttpStatus: http.StatusBadRequest,
-			Message:    "User does not have annotator role in the project",
-		}
+		//assign a project role to user
+		appErr = hls.DbHelper.AddProjectRoleToUser(ctx, platformUserId, projectId, roleFromTskType(taskType))
+
 	}
 
-	if !canUserDoTheTaskByRole((*userRoleObj)["role"].(string), (*taskInfo)["type"].(string)) {
+	if userRoleObj != nil && !canUserDoTheTaskByRole((*userRoleObj)["role"].(string), taskType) {
 		return nil, &apperror.AppError{
 			Err:        nil,
 			Code:       apperror.INVALID_REQUEST,

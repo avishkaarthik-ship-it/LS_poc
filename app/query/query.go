@@ -33,6 +33,14 @@ func (db *psqlDbHelperIns) GetTaskInfoById(ctx context.Context, id int) (*map[st
 	defer rows.Close()
 
 	res := MapOfQueryResponse(rows)
+	if res == nil || len(*res) == 0 {
+		return nil, &apperror.AppError{
+			Err:        fmt.Errorf("task not found"),
+			Code:       apperror.NOT_FOUND_ERROR,
+			HttpStatus: 404,
+			Message:    "Task not found",
+		}
+	}
 	taskInfo := (*res)[0]
 	return &taskInfo, nil
 
@@ -185,4 +193,27 @@ func (db *psqlDbHelperIns) AddReviewResultToTask(ctx context.Context, taskId int
 	}
 
 	return nil
+}
+
+func (db *psqlDbHelperIns) AddProjectRoleToUser(
+	ctx context.Context,
+	platformUserId int, projectId int, role string,
+) *apperror.AppError {
+	_, err := db.PgClient.Exec(ctx,
+		`INSERT INTO hl_user_project_role (platform_user_id, project_id, role)
+		VALUES ($1, $2, $3);`,
+		platformUserId, projectId, role,
+	)
+
+	if err != nil {
+		return &apperror.AppError{
+			Err:        err,
+			Code:       apperror.QUERY_ERROR,
+			HttpStatus: 500,
+			Message:    "Failed to add project role to user",
+		}
+	}
+
+	return nil
+
 }
