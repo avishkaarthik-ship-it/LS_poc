@@ -29,7 +29,7 @@ datasource db {
 */
 model hl_user {
   id                Int      @id @default(autoincrement())
-  platform_user_id  Int
+  platform_user_id  String @unique // "<platform_prefix>:<platform_hash>:<platform_user_id>s"
   name              String
   email             String
   created_at        DateTime @default(now())
@@ -37,36 +37,33 @@ model hl_user {
 }
 
 /**
-* This is an association table mapping users to projects with specific roles
+* This is an association table mapping users to projects 
 * A user can have multiple roles in different projects
-* Roles can be : annotator, reviewer (for now at least)
-* Question: hwo will this be configured ? or the eligibility be configured ?
+* so this will have reference to platform_user_id and project_id
+* skill_track will be a json dump of skills used in this project for analysis purpose
+* NOTE: The skill track is bit ambiguous now, will refine it as thing get clearer 
 */
-model hl_user_project_role {
+model user_project_association {
   id                Int @id @default(autoincrement())
-  platform_user_id  Int
+  platform_user_id  String
   project_id        Int
-  role              String
+  skill_tack        Json? // to define specific skill or task types the user is eligible for in the project
   created_at        DateTime @default(now()) 
   updated_at        DateTime @updatedAt
 }
 
 /**
 * This is the main project table
-* Each project will have multiple stages defined in the project_pipeline_stage table 
-    (not part of poc but adding for future references)
-* Each stage will have tasks defined in the hl_task table
-* This will also have a reference to the annotator project id in annotator platform (label studio)
-* The stage_order will define the order of stages in the project pipeline 
-    NOTE: the order will be exactly as defined in the string with comma separation
-* current_stage will define the current stage of the project
+* this is the highest level in the hierarchy of task lifecycle
+* So the logic is like so - each project might have multiple stages in the pipeline
+* each stage will have multiple tasks of same type (onboarding, test, collection, annotation, review/qc)
 */
 model hl_project {
   id                    Int @id @default(autoincrement())
   name                  String
   desc                  String
-  annotator_project_id  Int
-  stage_order           String // "collection , annotation, review"
+  annotator_project_id  Int // this is the project id in the annotator platform (label studio)
+  stage_order           String // "onboarding, test, collection, annotation, review"
   current_stage         String
   created_at            DateTime @default(now())
   updated_at            DateTime @updatedAt
@@ -74,9 +71,8 @@ model hl_project {
 
 /**
 * This table defines the stages in a project pipeline
-* Each stage will have its own custom config as per the type (collection, annotation, review/qcs)
-* Improvements: ideally this should be a nosql thing as the config can be complex and dynamic
-* but for poc purposes keeping it simple
+* Each stage will have its own custom config as per the type (onboarding, test, collection, annotation, review/qcs)
+* NOTE: This might be a complex and config with more depth so a nosql approach might be better
 * this will have reference to the project id in hl_project table
   NOTE:this is the project_id in human labs not the LABEL STUDIO project id
 */
@@ -85,7 +81,7 @@ model project_pipeline_stage {
   project_id    Int 
   name          String
   desc          String
-  type          String // [collection, annotation, review/qc]
+  type          String // [onboarding, test, collection, annotation, review/qc]
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 }
@@ -93,16 +89,21 @@ model project_pipeline_stage {
 /**
 * This is an association table mapping users to tasks
 * so this will have reference to platform_user_id and task_id
+* operation_data will have json data specific to the operation done on the task
+  - annotation_data: {annotation_id}
+  - review_data: {reason}
+  ...etc
 * assigned_at will have the timestamp when the task was assigned
 * task_expiry will have the timestamp when the task is expected to be completed
 * completed_at will have the timestamp when the task was actually completed
   FLOW: might run a cron job or schedular to check for expired tasks and notify users or make the task open again
 */
-model hl_user_task {
+model user_task_association {
   id                Int      @id @default(autoincrement())
-  platform_user_id  Int
+  platform_user_id  String
   task_id           Int
-  annotation_id    Int?
+  operation_data    Json? 
+  // { annotation_data: {annotation_id}, review_data: {reason} ...etc}
   assigned_at       DateTime @default(now())
   task_expiry       DateTime? 
   completed_at      DateTime?
@@ -118,7 +119,7 @@ model hl_user_task {
 model hl_task {
   id                    Int      @id @default(autoincrement())
   project_id            Int
-  annotator_task_id     Int
+  annotator_task_id     Int // this is the task id in the annotator platform (label studio)
   name                  String
   desc                  String
   type                  String // collection, annotation, review/qc 

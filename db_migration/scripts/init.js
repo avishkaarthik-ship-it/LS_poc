@@ -1,5 +1,5 @@
 const axios = require("axios");
-const TKN = process.argv[2] || "d7b9acb94f5def3aa4a2c234936f9f4e1752f4f2";
+const TKN = process.argv[2] || "b560dec4d8034e5a0816391f0217785f5e6c1a78";
 const PROJECT_ID = parseInt(process.argv[3]) || 1; 
 
 const {PrismaPg} = require("@prisma/adapter-pg");   
